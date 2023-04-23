@@ -55,30 +55,34 @@
     buildFlagsArray+=("-tags=${nixpkgs.lib.concatStringsSep " " tags}")
     buildFlagsArray+=("-ldflags=${buildVarsFlags}")
   '';
+            };
+            lnd-scb = pkgs.buildGoModule rec {
+              pname = "lnd";
+              version = "scb_cln_issue_7301_v0.16.0-beta.rc1";
 
-              meta = with nixpkgs.lib; {
-                description = "Lightning Network Daemon";
-                homepage = "https://github.com/lightningnetwork/lnd";
-                license = licenses.mit;
-                maintainers = with maintainers; [ cypherpunk2140 prusnak ];
+              src = pkgs.fetchFromGitHub {
+                owner = "lightningnetwork";
+                repo = "lnd";
+                rev = "c13af011497113cd55f4f10be0cbab16788f2583";
+                sha256 = "sha256-eDI5qHfukaw1rZRZY50Hc10vct8XwuUTHfh/1RCV3ac=";
               };
+
+              vendorSha256 = "sha256-Ru3Hc3EyBYAp4piX3j0Xpq087tMzhfIeu6OW63t67ms=";
+
+              subPackages = [ "cmd/lncli" "cmd/lnd" ];
+
+              preBuild = let
+                buildVars = {
+                  RawTags = nixpkgs.lib.concatStringsSep "," ( tags ++ [ "dev" ] );
+                  GoVersion = "$(go version | egrep -o 'go[0-9]+[.][^ ]*')";
+                };
+                buildVarsFlags = nixpkgs.lib.concatStringsSep " " (nixpkgs.lib.mapAttrsToList (k: v: "-X github.com/lightningnetwork/lnd/build.${k}=${v}") buildVars);
+              in
+                nixpkgs.lib.optionalString (tags != []) ''
+    buildFlagsArray+=("-tags=${nixpkgs.lib.concatStringsSep " " tags}")
+    buildFlagsArray+=("-ldflags=${buildVarsFlags}")
+  '';         
             };
         });
-      
-      # Add dependencies that are only needed for development
-      # devShells = forAllSystems (system:
-      #   let 
-      #     pkgs = nixpkgsFor.${system};
-      #   in
-      #   {
-      #     default = pkgs.mkShell {
-      #       buildInputs = with pkgs; [ go gopls gotools go-tools ];
-      #     };
-      #   });
-
-      # The default package for 'nix build'. This makes sense if the
-      # flake provides only one package or there is a clear "main"
-      # package.
-      # defaultPackage = forAllSystems (system: self.packages.${system}.lnd);
     };
 }
