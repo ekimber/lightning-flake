@@ -28,7 +28,7 @@
           pkgs = nixpkgsFor.${system};
           tags = [ "autopilotrpc" "signrpc" "walletrpc" "chainrpc" "invoicesrpc" "watchtowerrpc" "routerrpc" "monitoring" "kvdb_postgres" "kvdb_etcd" ];
         in
-          {
+          rec {
             lnd = pkgs.buildGoModule rec {
               pname = "lnd";
               version = "0.16.0-beta";
@@ -73,16 +73,17 @@
 
               preBuild = let
                 buildVars = {
-                  RawTags = nixpkgs.lib.concatStringsSep "," ( tags ++ [ "dev" ] );
+                  RawTags =  "dev";
                   GoVersion = "$(go version | egrep -o 'go[0-9]+[.][^ ]*')";
                 };
                 buildVarsFlags = nixpkgs.lib.concatStringsSep " " (nixpkgs.lib.mapAttrsToList (k: v: "-X github.com/lightningnetwork/lnd/build.${k}=${v}") buildVars);
               in
                 nixpkgs.lib.optionalString (tags != []) ''
-    buildFlagsArray+=("-tags=${nixpkgs.lib.concatStringsSep " " tags}")
+    buildFlagsArray+=("-tags=dev")
     buildFlagsArray+=("-ldflags=${buildVarsFlags}")
   '';         
             };
+            default = lnd;
         });
     };
 }
