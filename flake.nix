@@ -83,7 +83,34 @@
     buildFlagsArray+=("-ldflags=${buildVarsFlags}")
   '';         
             };
+            lnd-funds-recovery = pkgs.buildGoModule rec {
+              pname = "lnd";
+              version = "v0.16.1-beta-fund-recovery";
+
+              src = pkgs.fetchFromGitHub {
+                owner = "guggero";
+                repo = "lnd";
+                rev = "${version}";
+                sha256 = "sha256-f2K7DtHcGC4N9VLKtTXBwoMu0MLE3l5EiL8UOA1OYy4=";
+              };
+
+              vendorSha256 = "sha256-yY6H2K9B9ko5bVdmsGPDJkxPXpfAs0O2fuaZryrcuc0=";
+
+              subPackages = [ "cmd/lncli" "cmd/lnd" ];
+
+              preBuild = let
+                buildVars = {
+                  RawTags =  "dev";
+                  GoVersion = "$(go version | egrep -o 'go[0-9]+[.][^ ]*')";
+                };
+                buildVarsFlags = nixpkgs.lib.concatStringsSep " " (nixpkgs.lib.mapAttrsToList (k: v: "-X github.com/lightningnetwork/lnd/build.${k}=${v}") buildVars);
+              in
+                nixpkgs.lib.optionalString (tags != []) ''
+    buildFlagsArray+=("-tags=dev")
+    buildFlagsArray+=("-ldflags=${buildVarsFlags}")
+  '';         
+            };
             default = lnd;
-        });
+          });
     };
 }
